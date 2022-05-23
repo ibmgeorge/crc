@@ -1,0 +1,89 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-splunk-1
+spec:
+  storageClassName: local-storage
+  capacity:
+    storage: 100Gi
+  hostPath:
+    path: /mnt/pv-data/splunk-pv-1
+  accessModes:
+    - ReadWriteOnce
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-splunk-2
+spec:
+  storageClassName: local-storage
+  capacity:
+    storage: 100Gi
+  hostPath:
+    path: /mnt/pv-data/splunk-pv-2
+  accessModes:
+    - ReadWriteOnce
+---
+apiVersion: enterprise.splunk.com/v1
+kind: Standalone
+metadata:
+  name: example
+  labels:
+    app: splunk
+spec:
+  extraEnv:
+    - items:
+      name: ANSIBLE_EXTRA_FLAGS
+      value: '-vvv'
+  etcVolumeStorageConfig:
+    storageClassName: local-storage
+    storageCapacity: 10Gi
+  varVolumeStorageConfig:
+    storageClassName: local-storage
+    storageCapacity: 20Gi
+  volumes:
+    - name: defaults
+      configMap:
+        name: splunk-defaults
+  defaultsUrl: /mnt/defaults/default.yml
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: splunk-web
+  labels:
+    app: splunk
+spec:
+  host: splunk-web.apps-crc.testing
+  path: /
+  to:
+    kind: Service
+    name: splunk-example-standalone-headless
+    weight: 100
+  port:
+    targetPort: http-splunkweb
+  wildcardPolicy: None
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: splunk-hec
+  labels:
+    app: splunk
+spec:
+  host: splunk-hec.apps-crc.testing
+  path: /
+  to:
+    kind: Service
+    name: splunk-example-standalone-headless
+    weight: 100
+  port:
+    targetPort: http-hec
+  wildcardPolicy: None

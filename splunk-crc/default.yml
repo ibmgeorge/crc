@@ -1,0 +1,10 @@
+splunk:
+  hec:
+    enable: true
+    ssl: false
+    port: 8088
+    token: 4a8a737d-5452-426c-a6f7-106dca4e813f
+  http_enableSSL: 0
+  http_port: 8000
+  admin_user: admin
+  password: 820928
