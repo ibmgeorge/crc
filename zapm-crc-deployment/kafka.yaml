@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-internal-svc
+  labels:
+    app:  kafka
+spec:
+  selector:
+    app:  kafka
+  ports:
+    - port: 9092
+      name: kafka-internal-svc
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-external-svc
+  labels:
+    app:  kafka
+spec:
+  selector:
+    app:  kafka
+  ports:
+    - port: 9090
+      nodePort: 30090 #input13
+      name: kafka-external-svc
+  type: NodePort
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name:  kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app:  kafka
+    spec:
+      containers:
+        - name:  kafka
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-kafka:3.1.0" #input01
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9090
+            - containerPort: 9092
+          # volumeMounts:
+          #   - mountPath: "/bitnami/kafka/config/certs/"
+          #     name: input14
+          #     readOnly: true
+          env:
+            - name: ALLOW_PLAINTEXT_LISTENER
+              value: "yes"
+            - name: KAFKA_CFG_BROKER_ID
+              value: "1"
+            - name: KAFKA_CFG_ZOOKEEPER_CONNECT
+              value: "zookeeper-svc:2181"
+            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT" # SSL
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: "INTERNAL://kafka-internal-svc:9092, EXTERNAL://192.168.1.4:30090" # input12:input13
+            - name: KAFKA_CFG_LISTENERS
+              value: "INTERNAL://0.0.0.0:9092, EXTERNAL://0.0.0.0:9090"
+            - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+              value: "INTERNAL"
+            - name: KAFKA_CFG_NUM_PARTITIONS
+              value: "20"
+            - name: KAFKA_CFG_LOG_RETENTION_MINUTES
+              value: "1"
+            # - name: KAFKA_CFG_SSL_CLIENT_AUTH
+            #   value: "required"
+            # - name: KAFKA_CFG_SSL_ENABLED_PROTOCOLS
+            #   value: "TLSv1.2"
+            # - name: KAFKA_CFG_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+            #   value: "https"
+            # - name: KAFKA_CFG_SSL_TRUSTSTORE_LOCATION
+            #   value: "/bitnami/kafka/config/certs/kafka.truststore.jks"
+            # - name: KAFKA_CFG_SSL_KEYSTORE_LOCATION
+            #   value: "/bitnami/kafka/config/certs/kafka.keystore.jks"
+            # - name: KAFKA_CERTIFICATE_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: input14
+            #       key: keystore-pass
+            # - name: KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: input14
+            #       key: truststore-pass
+            # - name: KAFKA_CFG_SSL_KEYSTORE_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: input14
+            #       key: keystore-pass
+            # - name: KAFKA_CFG_SSL_KEY_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: input14
+            #       key: key-pass
+      # volumes:
+      #   - name: input14
+      #     secret:
+      #       secretName: input14

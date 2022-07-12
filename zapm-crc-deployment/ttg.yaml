@@ -1,0 +1,85 @@
+# Source: zapm-connect/templates/ttg.yaml
+apiVersion: "v1"
+kind: ConfigMap
+metadata:
+  name: ttg-input02-config
+data:
+  TTG_LOG_LEVEL: "INFO"
+  APPD_SDK_LOGGING_LEVEL: "INFO"
+  APPD_GROUP_BY_COMPONENT_TYPE: "0"
+  APPD_ALERT_THRESHOLD: "10"
+  APPD_CONTROLLER_INIT_TIMEOUT: "0"
+  KAFKA_BROKER: "kafka-internal-svc"
+  KAFKA_CONSUME_TIMEOUT: "1000"
+  KAFKA_SECURITY_PROTOCOL: "plaintext"
+  APPD_CONTROLLER_NAME: "input02"
+  APPD_CONTROLLER_HOST: "input03"
+  APPD_CONTROLLER_PORT: "input04"
+  APPD_CONTROLLER_ACCOUNT: "input05"
+  APPD_CONTROLLER_ACCESS_KEY: "input06"
+  APPD_ACCOUNT_ID: "input07"
+  APPD_CONTROLLER_REST_OAUTH: "input19"
+  APPD_CONTROLLER_USERNAME: "input08"
+  APPD_CONTROLLER_USE_SSL: "input20"
+  APPD_SDK_CONTROLLER_CERTIFICATE_DIR: "input17"
+  APPD_SDK_CONTROLLER_CERTIFICATE_FILE: "input18"
+  APPD_CONTROLLER_PROXY_HOST: "input10"
+  APPD_CONTROLLER_PROXY_PORT: "input11"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ttg-input02
+  labels:
+    app: ttg-input02
+spec:
+  serviceName: ttg-input02
+  replicas: 5
+  selector:
+    matchLabels:
+      app: ttg-input02
+  template:
+    metadata:
+      labels:
+        app: ttg-input02
+    spec:
+      containers:
+        - name: ttg-input02
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-ttg:6.1.0-16" #input01
+          imagePullPolicy: IfNotPresent
+# Uncomment section below if using TLS in communicating with the AppDynamics controller,
+# and a self-signed certificate is used on the controller
+#          volumeMounts:
+#            - mountPath: "/var/certs"
+#              name: input09
+#              readOnly: true
+          # Create the environment variables from the config map
+          envFrom:
+            - configMapRef:
+                name: ttg-input02-config
+          env:
+            - name: APPD_CONTROLLER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: input09
+                  key: appd_controller_password
+            - name: KAFKA_CLIENT_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            exec:
+              command:
+                - "nc"
+                - "-z"
+                - "-w"
+                - "5"
+                - "kafka-internal-svc"
+                - "9092"
+            periodSeconds: 1
+# Uncomment section below if using TLS in communicating with the AppDynamics controller,
+# and a self-signed certificate is used on the controller
+#      volumes:
+#        - name: input09
+#          secret:
+#            secretName: input09
