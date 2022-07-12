@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: connection-manager
-          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-16" #input01
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-17" #input01
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5455
@@ -81,7 +81,7 @@ spec:
     spec:
       containers:
         - name: event-partitioner
-          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-16" #input01
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-17" #input01
           imagePullPolicy: IfNotPresent
           env:
             - name: ZAPM_KAFKA_SERVER
@@ -89,7 +89,7 @@ spec:
             - name: ZAPM_EVENT_PARTITIONER
               value: "true"
             - name: ZAPM_LOG_LEVEL
-              value: debug
+              value: info
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -110,7 +110,7 @@ spec:
     spec:
       containers:
         - name: span-collector
-          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-16" #input01
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-17" #input01
           imagePullPolicy: IfNotPresent
           env:
             - name: ZAPM_REDIS_HOSTNAME
@@ -120,7 +120,11 @@ spec:
             - name: ZAPM_SPAN_COLLECTOR
               value: "true"
             - name: ZAPM_LOG_LEVEL
-              value: debug
+              value: info
+            # If using Instana as the vendor, uncomment below name/value if MQ->CICS and MQ->IMS support is desired,
+            # setting value to "1000" 
+            - name: ZAPM_COLLECTION_DELAY
+              value: "1000"
 ---
 # Source: zapm-connect/templates/transaction-processor.yaml
 apiVersion: apps/v1
@@ -142,7 +146,7 @@ spec:
     spec:
       containers:
         - name: span-factory
-          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-16" #input01
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-17" #input01
           imagePullPolicy: IfNotPresent
           env:
             - name: ZAPM_REDIS_HOSTNAME
@@ -152,7 +156,7 @@ spec:
             - name: ZAPM_SPAN_FACTORY
               value: "true"
             - name: ZAPM_LOG_LEVEL
-              value: debug
+              value: info
             - name: ZAPM_KAFKA_CLIENT_ID
               valueFrom:
                 fieldRef:
@@ -177,7 +181,7 @@ spec:
     spec:
       containers:
         - name: transaction-factory
-          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-16" #input01
+          image: "image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/zapm-transaction-processor:6.1.0-17" #input01
           imagePullPolicy: IfNotPresent
           env:
             - name: ZAPM_REDIS_HOSTNAME
